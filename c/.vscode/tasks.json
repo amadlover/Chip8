@@ -189,7 +189,7 @@
       {
         "label": "Debug Asset Copy X86",
         "type": "shell",
-        "command": "Copy-Item -Path '${workspaceFolder}/roms/*' -Destination '${workspaceFolder}/build32/vscode/debug/' -Recurse -Force",
+        "command": "Copy-Item -Path '${workspaceFolder}/../roms/*' -Destination '${workspaceFolder}/build32/vscode/debug/' -Recurse -Force",
         "group":{
           "kind": "build",
           "isDefault": true
@@ -201,7 +201,7 @@
       {
         "label": "Release Asset Copy X86",
         "type": "shell",
-        "command": "Copy-Item -Path '${workspaceFolder}/roms/*' -Destination '${workspaceFolder}/build32/vscode/release/' -Recurse -Force",
+        "command": "Copy-Item -Path '${workspaceFolder}/../roms/*' -Destination '${workspaceFolder}/build32/vscode/release/' -Recurse -Force",
         "group":{
           "kind": "build",
           "isDefault": true
@@ -213,7 +213,7 @@
       {
         "label": "Debug Asset Copy X64",
         "type": "shell",
-        "command": "Copy-Item -Path '${workspaceFolder}/roms/*' -Destination '${workspaceFolder}/build64/vscode/debug/' -Recurse -Force",
+        "command": "Copy-Item -Path '${workspaceFolder}/../roms/*' -Destination '${workspaceFolder}/build64/vscode/debug/' -Recurse -Force",
         "group":{
           "kind": "build",
           "isDefault": true
@@ -225,7 +225,7 @@
       {
         "label": "Release Asset Copy X64",
         "type": "shell",
-        "command": "Copy-Item -Path '${workspaceFolder}/roms/*' -Destination '${workspaceFolder}/build64/vscode/release/' -Recurse -Force",
+        "command": "Copy-Item -Path '${workspaceFolder}/../roms/*' -Destination '${workspaceFolder}/build64/vscode/release/' -Recurse -Force",
         "group":{
           "kind": "build",
           "isDefault": true
