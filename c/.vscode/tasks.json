@@ -1,0 +1,264 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "Build Debug X86",
+        "type": "shell",
+        "command": "cl.exe",
+        "args": [
+          "/EHsc",
+          "/GR-",
+          "/DDEBUG",
+          "/D_DEBUG",
+          "/DUNICODE",
+          "/DWIN32_LEAN_AND_MEAN",
+          "/DWIN32",
+          "/D_CRT_SECURE_NO_WARNINGS",
+          "/I${workspaceFolder}/src",
+          "/MDd",
+          "/W3",
+          "/Z7",
+          "/MP",
+          "src/main.c",
+          "Shlwapi.lib",
+          "kernel32.lib",
+          "user32.lib",
+          "gdi32.lib",
+          "winspool.lib",
+          "shell32.lib",
+          "ole32.lib",
+          "oleaut32.lib",
+          "uuid.lib",
+          "comdlg32.lib",
+          "advapi32.lib",
+          "/Fo${workspaceFolder}/build32/vscode/debug/",
+          "/Fe${workspaceFolder}/build32/vscode/debug/chip8.exe",
+          "/link",
+          "/DEBUG:FASTLINK",
+          "/MACHINE:X86",
+          "/SUBSYSTEM:WINDOWS",
+          "/incremental"
+        ],
+        "group": {
+          "kind": "build",
+          "isDefault": true
+        },
+        "presentation": {
+          "reveal": "always"
+        },
+        "problemMatcher": "$msCompile"
+      },
+      {
+        "label": "Build Release X86",
+        "type": "shell",
+        "command": "cl.exe",
+        "args": [
+          "/EHsc",
+          "/GR-",
+          "/DNDEBUG",
+          "/DUNICODE",
+          "/DWIN32_LEAN_AND_MEAN",
+          "/DWIN32",
+          "/D_CRT_SECURE_NO_WARNINGS",
+          "/I${workspaceFolder}/src",
+          "/MD",
+          "/W3",
+          "/Ox",
+          "/MP",
+          "src/main.c",
+          "Shlwapi.lib",
+          "kernel32.lib",
+          "user32.lib",
+          "gdi32.lib",
+          "winspool.lib",
+          "shell32.lib",
+          "ole32.lib",
+          "oleaut32.lib",
+          "uuid.lib",
+          "comdlg32.lib",
+          "advapi32.lib",
+          "/Fo${workspaceFolder}/build32/vscode/release/",
+          "/Fe${workspaceFolder}/build32/vscode/release/chip8.exe",
+          "/link",
+          "/MACHINE:X86",
+          "/SUBSYSTEM:WINDOWS",
+          "/incremental"
+        ],
+        "group": {
+          "kind": "build",
+          "isDefault": true
+        },
+        "presentation": {
+          "reveal": "always"
+        },
+        "problemMatcher": "$msCompile"
+      },
+      {
+        "label": "Build Debug X64",
+        "type": "shell",
+        "command": "cl.exe",
+        "args": [
+          "/EHsc",
+          "/GR-",
+          "/DDEBUG",
+          "/D_DEBUG",
+          "/DUNICODE",
+          "/DWIN32_LEAN_AND_MEAN",
+          "/DWIN32",
+          "/D_CRT_SECURE_NO_WARNINGS",
+          "/I${workspaceFolder}/src",
+          "/MDd",
+          "/W3",
+          "/Z7",
+          "/MP",
+          "src/main.c",
+          "Shlwapi.lib",
+          "kernel32.lib",
+          "user32.lib",
+          "gdi32.lib",
+          "winspool.lib",
+          "shell32.lib",
+          "ole32.lib",
+          "oleaut32.lib",
+          "uuid.lib",
+          "comdlg32.lib",
+          "advapi32.lib",
+          "/Fo${workspaceFolder}/build64/vscode/debug/",
+          "/Fe${workspaceFolder}/build64/vscode/debug/chip8.exe",
+          "/link",
+          "/DEBUG:FASTLINK",
+          "/MACHINE:X64",
+          "/SUBSYSTEM:WINDOWS",
+          "/incremental"
+        ],
+        "group": {
+          "kind": "build",
+          "isDefault": true
+        },
+        "presentation": {
+          "reveal": "always"
+        },
+        "problemMatcher": "$msCompile"
+      },
+      {
+        "label": "Build Release X64",
+        "type": "shell",
+        "command": "cl.exe",
+        "args": [
+          "/EHsc",
+          "/GR-",
+          "/DNDEBUG",
+          "/DUNICODE",
+          "/DWIN32_LEAN_AND_MEAN",
+          "/DWIN32",
+          "/D_CRT_SECURE_NO_WARNINGS",
+          "/I${workspaceFolder}/src",
+          "/MD",
+          "/W3",
+          "/Ox",
+          "/MP",
+          "src/main.c",
+          "Shlwapi.lib",
+          "kernel32.lib",
+          "user32.lib",
+          "gdi32.lib",
+          "winspool.lib",
+          "shell32.lib",
+          "ole32.lib",
+          "oleaut32.lib",
+          "uuid.lib",
+          "comdlg32.lib",
+          "advapi32.lib",
+          "vulkan-1.lib",
+          "/Fo${workspaceFolder}/build64/vscode/release/",
+          "/Fe${workspaceFolder}/build64/vscode/release/chip.exe",
+          "/link",
+          "/MACHINE:X64",
+          "/SUBSYSTEM:WINDOWS",
+          "/incremental"
+        ],
+        "group": {
+          "kind": "build",
+          "isDefault": true
+        },
+        "presentation": {
+          "reveal": "always"
+        },
+        "problemMatcher": "$msCompile"
+      },
+      {
+        "label": "Debug Asset Copy X86",
+        "type": "shell",
+        "command": "Copy-Item -Path '${workspaceFolder}/roms/*' -Destination '${workspaceFolder}/build32/vscode/debug/' -Recurse -Force",
+        "group":{
+          "kind": "build",
+          "isDefault": true
+        },
+        "presentation": {
+          "reveal": "always",
+        }
+      },
+      {
+        "label": "Release Asset Copy X86",
+        "type": "shell",
+        "command": "Copy-Item -Path '${workspaceFolder}/roms/*' -Destination '${workspaceFolder}/build32/vscode/release/' -Recurse -Force",
+        "group":{
+          "kind": "build",
+          "isDefault": true
+        },
+        "presentation": {
+          "reveal": "always",
+        }
+      },
+      {
+        "label": "Debug Asset Copy X64",
+        "type": "shell",
+        "command": "Copy-Item -Path '${workspaceFolder}/roms/*' -Destination '${workspaceFolder}/build64/vscode/debug/' -Recurse -Force",
+        "group":{
+          "kind": "build",
+          "isDefault": true
+        },
+        "presentation": {
+          "reveal": "always",
+        }
+      },
+      {
+        "label": "Release Asset Copy X64",
+        "type": "shell",
+        "command": "Copy-Item -Path '${workspaceFolder}/roms/*' -Destination '${workspaceFolder}/build64/vscode/release/' -Recurse -Force",
+        "group":{
+          "kind": "build",
+          "isDefault": true
+        },
+        "presentation": {
+          "reveal": "always",
+        }
+      },
+      {
+        "label": "Launch Release X86",
+        "type": "shell",
+        "command": "${workspaceFolder}/build32/vscode/release/chip8.exe",
+        "group": {
+          "kind": "build",
+          "isDefault": true
+        },
+        "presentation":{
+          "reveal": "always",
+        },
+        "problemMatcher": []
+      },
+      {
+        "label": "Launch Release X64",
+        "type": "shell",
+        "command": "${workspaceFolder}/build64/vscode/release/chip8.exe",
+        "group": {
+          "kind": "build",
+          "isDefault": true
+        },
+        "presentation":{
+          "reveal": "always",
+        },
+        "problemMatcher": []
+      }
+    ]
+  }
