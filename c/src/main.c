@@ -7,6 +7,18 @@
 typedef struct _cpu
 {
     unsigned char memory[4096];
+
+    unsigned char vx[16];
+    unsigned char vf;
+    unsigned short i;
+
+    unsigned char delay_timer;
+    unsigned char sound_timer;
+
+    unsigned short pc;
+    unsigned char sp;
+
+    unsigned short stack[16];
 } cpu;
 
 void cpu_create_font_set (cpu* cpu_obj)
@@ -137,13 +149,19 @@ void cpu_read_rom_from_file (cpu* cpu_obj, char* path)
         printf ("Failed to open %s\n", path);
         return;
     }
+
     fseek (file, 0, SEEK_END);
     int file_size = ftell (file);
     rewind (file);
     
-    fread (&cpu_obj->memory[512], sizeof (unsigned char), file_size, file);
+    fread (cpu_obj->memory + 512, sizeof (unsigned char), file_size, file);
 
     fclose (file);
+
+    for (int i = 512; i < 512 + file_size; i += 2)
+    {
+        printf ("%x %x\n", cpu_obj->memory[i], cpu_obj->memory[i + 1]);
+    }
 }
 
 void cpu_destroy (cpu* cpu_obj)
@@ -158,6 +176,7 @@ void cpu_destroy (cpu* cpu_obj)
 int WINAPI wWinMain (_In_ HINSTANCE h_instance, _In_opt_ HINSTANCE previous_instance, _In_ PWSTR cmd_line, _In_ int cmd_show)
 {
     printf ("Hello Chip8\n");
+
     char* path = "./build32/vscode/debug/IBM_Logo.ch8";
 
     cpu* cpu_obj = (cpu*)cpu_create ();
