@@ -84,56 +84,56 @@ void cpu_create_font_set (cpu* cpu_obj)
     cpu_obj->memory[41] = 0x90;
     cpu_obj->memory[42] = 0xF0;
     cpu_obj->memory[43] = 0xF9;
-    cpu_obj->memory[42] = 0xF0;
+    cpu_obj->memory[44] = 0xF0;
 
     // 9
-    cpu_obj->memory[43] = 0xF0;
-    cpu_obj->memory[44] = 0x90;
-    cpu_obj->memory[43] = 0xF0;
-    cpu_obj->memory[44] = 0x10;
     cpu_obj->memory[45] = 0xF0;
+    cpu_obj->memory[46] = 0x90;
+    cpu_obj->memory[47] = 0xF0;
+    cpu_obj->memory[48] = 0x10;
+    cpu_obj->memory[49] = 0xF0;
 
     // A
-    cpu_obj->memory[46] = 0xF0;
-    cpu_obj->memory[47] = 0x90;
-    cpu_obj->memory[48] = 0xF0;
-    cpu_obj->memory[49] = 0x90;
-    cpu_obj->memory[50] = 0x90;
+    cpu_obj->memory[50] = 0xF0;
+    cpu_obj->memory[51] = 0x90;
+    cpu_obj->memory[52] = 0xF0;
+    cpu_obj->memory[53] = 0x90;
+    cpu_obj->memory[54] = 0x90;
 
     // B
-    cpu_obj->memory[51] = 0xE0;
-    cpu_obj->memory[52] = 0x90;
-    cpu_obj->memory[53] = 0xF0;
-    cpu_obj->memory[54] = 0x10;
     cpu_obj->memory[55] = 0xE0;
+    cpu_obj->memory[56] = 0x90;
+    cpu_obj->memory[57] = 0xF0;
+    cpu_obj->memory[58] = 0x10;
+    cpu_obj->memory[59] = 0xE0;
 
     // C
-    cpu_obj->memory[56] = 0xF0;
-    cpu_obj->memory[57] = 0x80;
-    cpu_obj->memory[58] = 0x80;
-    cpu_obj->memory[59] = 0x80;
     cpu_obj->memory[60] = 0xF0;
+    cpu_obj->memory[61] = 0x80;
+    cpu_obj->memory[62] = 0x80;
+    cpu_obj->memory[63] = 0x80;
+    cpu_obj->memory[64] = 0xF0;
 
     // D
-    cpu_obj->memory[61] = 0xE0;
-    cpu_obj->memory[62] = 0x90;
-    cpu_obj->memory[63] = 0x90;
-    cpu_obj->memory[64] = 0x90;
     cpu_obj->memory[65] = 0xE0;
+    cpu_obj->memory[66] = 0x90;
+    cpu_obj->memory[67] = 0x90;
+    cpu_obj->memory[68] = 0x90;
+    cpu_obj->memory[69] = 0xE0;
 
     // E
-    cpu_obj->memory[66] = 0xF0;
-    cpu_obj->memory[67] = 0x80;
-    cpu_obj->memory[68] = 0xF0;
-    cpu_obj->memory[69] = 0x80;
     cpu_obj->memory[70] = 0xF0;
+    cpu_obj->memory[71] = 0x80;
+    cpu_obj->memory[72] = 0xF0;
+    cpu_obj->memory[73] = 0x80;
+    cpu_obj->memory[74] = 0xF0;
 
     // F
-    cpu_obj->memory[71] = 0xF0;
-    cpu_obj->memory[72] = 0x80;
-    cpu_obj->memory[73] = 0xF0;
-    cpu_obj->memory[74] = 0x80;
-    cpu_obj->memory[75] = 0x80;
+    cpu_obj->memory[75] = 0xF0;
+    cpu_obj->memory[76] = 0x80;
+    cpu_obj->memory[77] = 0xF0;
+    cpu_obj->memory[78] = 0x80;
+    cpu_obj->memory[79] = 0x80;
 }
 
 void* cpu_create ()
@@ -146,7 +146,7 @@ void cpu_read_rom_from_file (cpu* cpu_obj, char* path)
     FILE* file = fopen (path, "r");
     if (!file)
     {
-        printf ("Failed to open %s\n", path);
+        OutputDebugMessage (L"Failed to open %s\n", path);  
         return;
     }
 
@@ -160,7 +160,7 @@ void cpu_read_rom_from_file (cpu* cpu_obj, char* path)
 
     for (int i = 512; i < 512 + file_size; i += 2)
     {
-        printf ("%x %x\n", cpu_obj->memory[i], cpu_obj->memory[i + 1]);
+        OutputDebugMessage (L"%x %x\n", cpu_obj->memory[i], cpu_obj->memory[i + 1]);
     }
 }
 
@@ -172,16 +172,109 @@ void cpu_destroy (cpu* cpu_obj)
     }
 }
 
+#define ID_GAME_TICK 1237
+
+LRESULT CALLBACK WindowProc (HWND h_wnd, UINT msg, WPARAM w_param, LPARAM l_param)
+{
+    switch (msg)
+    {
+        case WM_QUIT:
+        PostQuitMessage (0);
+        break;
+
+        case WM_DESTROY:
+        PostQuitMessage (0);
+        break;
+
+        case WM_CLOSE:
+        PostQuitMessage (0);
+        break;
+
+        case WM_KEYDOWN:
+        OutputDebugMessage (L"key down\n");
+        break;
+
+        case WM_KEYUP:
+        OutputDebugMessage (L"key up\n");
+
+        case WM_TIMER:
+        OutputDebugMessage (L"timer\n");
+
+        default:
+        break;
+    }
+    
+    return DefWindowProc (h_wnd, msg, w_param, l_param);
+}
 
 int WINAPI wWinMain (_In_ HINSTANCE h_instance, _In_opt_ HINSTANCE previous_instance, _In_ PWSTR cmd_line, _In_ int cmd_show)
 {
-    printf ("Hello Chip8\n");
+    OutputDebugMessage (L"Hello Chip8\n");
 
     char* path = "./build32/vscode/debug/IBM_Logo.ch8";
 
     cpu* cpu_obj = (cpu*)cpu_create ();
     cpu_create_font_set (cpu_obj);
     cpu_read_rom_from_file (cpu_obj, path);
+
+    WNDCLASS wc = {0};
+    wc.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
+    wc.lpfnWndProc = WindowProc;
+    wc.hInstance = h_instance;
+    wc.lpszClassName = L"Chip8";
+    wc.hCursor = LoadCursor (h_instance, IDC_ARROW);
+
+    if (!RegisterClass (&wc))
+    {
+        return EXIT_FAILURE;
+    }
+
+    HWND h_wnd = CreateWindow (
+        L"Chip8", 
+        L"Chip8",
+        WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU, 
+        CW_USEDEFAULT,
+        CW_USEDEFAULT,
+        1024,
+        512, 
+        NULL,
+        NULL,
+        h_instance,
+        NULL
+    );
+
+    if (!h_wnd)
+    {
+        return EXIT_FAILURE;
+    }
+
+    ShowWindow (h_wnd, cmd_show);
+    UpdateWindow (h_wnd);
+
+    SetTimer (h_wnd, ID_GAME_TICK, 1000, NULL);
+
+    MSG msg;
+    ZeroMemory (&msg, sizeof (msg));
+
+    while (
+        msg.message != WM_QUIT &&
+        msg.message != WM_CLOSE &&
+        msg.message != WM_DESTROY)
+    {
+        if (PeekMessage (&msg, NULL, 0, 0, PM_REMOVE))
+        {
+            TranslateMessage (&msg);
+            DispatchMessage (&msg);
+        }
+        else
+        {
+            // draw
+        }
+    }
+
+    KillTimer (h_wnd, ID_GAME_TICK);
+    DestroyWindow (h_wnd);
+
     cpu_destroy (cpu_obj);
 
     return EXIT_SUCCESS;
