@@ -4,6 +4,16 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+typedef struct _display
+{
+    unsigned char pixels[64 * 32];
+} display;
+
+void* display_create ()
+{
+    return calloc (1, sizeof (display));
+}
+
 typedef struct _cpu
 {
     unsigned char memory[4096];
@@ -20,6 +30,9 @@ typedef struct _cpu
 
     unsigned short stack[16];
 } cpu;
+
+cpu cpu_obj;
+display display_obj;
 
 void cpu_create_font_set (cpu* cpu_obj)
 {
@@ -141,12 +154,19 @@ void* cpu_create ()
     return calloc (1, sizeof (cpu));
 }
 
+void cpu_init (cpu* cpu_obj)
+{
+    cpu_obj->pc = 0x200;
+}
+
 void cpu_read_rom_from_file (cpu* cpu_obj, char* path)
 {
     FILE* file = fopen (path, "r");
     if (!file)
     {
-        OutputDebugString (L"Failed to open %s\n", path);  
+        wchar_t buff[256];
+        swprintf (buff, 256, L"Failed to open %hs\n", path);  
+        OutputDebugString (buff);
         return;
     }
 
@@ -160,8 +180,86 @@ void cpu_read_rom_from_file (cpu* cpu_obj, char* path)
 
     for (int i = 512; i < 512 + file_size; i += 2)
     {
-        OutputDebugString (L"%x %x\n", cpu_obj->memory[i], cpu_obj->memory[i + 1]);
+        wchar_t buff[256];
+        swprintf (buff, 256, L"%02x %02x\n", cpu_obj->memory[i], cpu_obj->memory[i + 1]);
+        OutputDebugString (buff);
     }
+}
+
+void cpu_execute (cpu* cpu_obj)
+{
+    unsigned short opcode = cpu_obj->memory[cpu_obj->pc] << 8 | cpu_obj->memory[cpu_obj->pc + 1];
+
+    wchar_t buff[256];
+    swprintf (buff, 256, L"Executing %02x %02x\n", cpu_obj->memory[cpu_obj->pc], cpu_obj->memory[cpu_obj->pc + 1]);
+    OutputDebugString (buff);
+
+    unsigned char opcode_higher_byte = cpu_obj->memory[cpu_obj->pc];
+    unsigned char opcode_lower_byte = cpu_obj->memory[cpu_obj->pc + 1];
+
+    if (opcode_higher_byte == 0x00)
+    {
+        if (opcode_lower_byte == 0xE0)
+        {
+            OutputDebugString (L"Clearing the screen\n");
+
+            memset (display_obj.pixels, 0, sizeof (char) * 64 * 32);
+            cpu_obj->pc += 2;
+        }
+        else if (opcode_lower_byte == 0xEE)
+        {
+            OutputDebugString (L"Returing from subroutine\n");
+        }
+    }
+    else if ((opcode_higher_byte & 0xF0) == 0xA0)
+    {
+        unsigned short address = (opcode_higher_byte & 0x0F) << 8 | opcode_lower_byte;
+
+        wchar_t buff[256];
+        swprintf (buff, 256, L"Pushing %04x to I\n", address);
+        OutputDebugString (buff);
+
+        cpu_obj->i = address;
+
+        cpu_obj->pc += 2;
+    }
+    else if ((opcode_higher_byte & 0xF0) == 0x60)
+    {
+        cpu_obj->vx[opcode_higher_byte & 0x0F] = opcode_lower_byte;
+
+        wchar_t buff[256];
+        swprintf (buff, 256, L"Putting %02x into V[%02x]\n", opcode_lower_byte, opcode_higher_byte & 0x0F);
+        OutputDebugString (buff);
+
+        cpu_obj->pc += 2;
+    }
+    else if ((opcode_higher_byte & 0xF0) == 0xD0)
+    {
+        OutputDebugString (L"Drawing\n");
+        cpu_obj->pc += 2;
+    }
+    else if ((opcode_higher_byte & 0xF0) == 0x70)
+    {
+        wchar_t buff[256];
+        swprintf (buff, 256, L"Setting vx[%02x] = vx[%02x] + %02x\n", opcode_higher_byte & 0x0F, opcode_higher_byte & 0x0F, opcode_lower_byte);
+        OutputDebugString (buff);
+
+        cpu_obj->vx[opcode_higher_byte & 0x0F] += opcode_lower_byte;
+
+        cpu_obj->pc += 2;
+    }
+    else if ((opcode_higher_byte & 0xF0) == 0x10)
+    {
+        wchar_t buff[256];
+        swprintf (buff, 256, L"Setting pc to %02x\n", (opcode_higher_byte & 0x0F) << 8 | opcode_lower_byte);
+        OutputDebugString (buff);
+
+        cpu_obj->pc = (opcode_higher_byte & 0x0F) << 8 | opcode_lower_byte;
+    }
+
+    memset (buff, 0, 256);
+    swprintf (buff, 256, L"PC: %04x\n", cpu_obj->pc);
+    OutputDebugString (buff);
 }
 
 void cpu_destroy (cpu* cpu_obj)
@@ -174,8 +272,12 @@ void cpu_destroy (cpu* cpu_obj)
 
 #define ID_GAME_TICK 1237
 
+
 LRESULT CALLBACK WindowProc (HWND h_wnd, UINT msg, WPARAM w_param, LPARAM l_param)
 {
+    RECT client_rect;
+    GetClientRect (h_wnd, &client_rect);
+
     switch (msg)
     {
         case WM_QUIT:
@@ -200,15 +302,16 @@ LRESULT CALLBACK WindowProc (HWND h_wnd, UINT msg, WPARAM w_param, LPARAM l_para
 
         case WM_TIMER:
             OutputDebugString (L"timer\n");
+            InvalidateRect (h_wnd, &client_rect, TRUE);
+            cpu_execute (&cpu_obj);
             break;
 
         case WM_PAINT:
+            OutputDebugString (L"Paint\n");
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint (h_wnd, &ps);
-            RECT rect;
-            GetClientRect (h_wnd, &rect);
             
-            FillRect (hdc, &rect, CreateSolidBrush (RGB (0,0,0)));
+            FillRect (hdc, &client_rect, CreateSolidBrush (RGB (0,0,0)));
             
             EndPaint (h_wnd, &ps);
            break;
@@ -226,9 +329,10 @@ int WINAPI wWinMain (_In_ HINSTANCE h_instance, _In_opt_ HINSTANCE previous_inst
 
     char* path = "./build32/vscode/debug/IBM_Logo.ch8";
 
-    cpu* cpu_obj = (cpu*)cpu_create ();
-    cpu_create_font_set (cpu_obj);
-    cpu_read_rom_from_file (cpu_obj, path);
+    // cpu_obj = (cpu*)cpu_create ();
+    cpu_create_font_set (&cpu_obj);
+    cpu_read_rom_from_file (&cpu_obj, path);
+    cpu_init (&cpu_obj);
 
     WNDCLASS wc = {0};
     wc.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
@@ -288,7 +392,7 @@ int WINAPI wWinMain (_In_ HINSTANCE h_instance, _In_opt_ HINSTANCE previous_inst
     KillTimer (h_wnd, ID_GAME_TICK);
     DestroyWindow (h_wnd);
 
-    cpu_destroy (cpu_obj);
+    // cpu_destroy (cpu_obj);
 
     return EXIT_SUCCESS;
 }
