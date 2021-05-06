@@ -4,14 +4,42 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include <stdint.h>
+
 typedef struct _display
 {
-    unsigned char pixels[64 * 32];
+    uint64_t x_pixels[32];
 } display;
 
 void* display_create ()
 {
     return calloc (1, sizeof (display));
+}
+
+void display_generate_diagonal (display* display_obj)
+{
+    for (char y = 0; y < 32; ++y)
+    {
+        for (char x = 0; x < 64; ++x)
+        {
+            if (x == y)
+            {
+                display_obj->x_pixels[y] |= (uint64_t)1 << x;
+            }
+            else
+            {
+                //display_obj->x_pixels[y] &= (uint64_t)0 << x;
+            }
+        }
+    }
+}
+
+void display_destroy (display* display_obj)
+{
+    if (display_obj != NULL)
+    {
+        free (display_obj);
+    }
 }
 
 typedef struct _cpu
@@ -203,7 +231,7 @@ void cpu_execute (cpu* cpu_obj)
         {
             OutputDebugString (L"Clearing the screen\n");
 
-            memset (display_obj.pixels, 0, sizeof (char) * 64 * 32);
+            memset (display_obj.x_pixels, 0, sizeof (uint64_t) * 32);
             cpu_obj->pc += 2;
         }
         else if (opcode_lower_byte == 0xEE)
@@ -310,11 +338,38 @@ LRESULT CALLBACK WindowProc (HWND h_wnd, UINT msg, WPARAM w_param, LPARAM l_para
             OutputDebugString (L"Paint\n");
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint (h_wnd, &ps);
-            
-            FillRect (hdc, &client_rect, CreateSolidBrush (RGB (0,0,0)));
-            
+
+            int chip_8_to_win32_scale = 16;
+
+            for (char y = 0; y < 32; ++y)
+            {
+                for (char x = 0; x < 64; ++x)
+                {
+                    if ((display_obj.x_pixels[y] & ((uint64_t)1 << x)) == (((uint64_t)1 << x)))
+                    {
+                        RECT draw_rect;
+                        draw_rect.left = chip_8_to_win32_scale * x;
+                        draw_rect.top = chip_8_to_win32_scale * y;
+                        draw_rect.bottom = chip_8_to_win32_scale * (y + 1);
+                        draw_rect.right = chip_8_to_win32_scale * (x + 1);
+
+                        FillRect (hdc, &draw_rect, CreateSolidBrush (RGB (255,255,255)));
+                    }
+                    else if ((display_obj.x_pixels[y] & ((uint64_t)1 << x)) == 0)
+                    {
+                        RECT draw_rect;
+                        draw_rect.left = chip_8_to_win32_scale * x;
+                        draw_rect.top = chip_8_to_win32_scale * y;
+                        draw_rect.bottom = chip_8_to_win32_scale * (y + 1);
+                        draw_rect.right = chip_8_to_win32_scale * (x + 1);
+
+                        FillRect (hdc, &draw_rect, CreateSolidBrush (RGB (0,0,0)));
+                    }
+                }
+            }
+
             EndPaint (h_wnd, &ps);
-           break;
+            break;
 
         default:
             break;
@@ -333,6 +388,8 @@ int WINAPI wWinMain (_In_ HINSTANCE h_instance, _In_opt_ HINSTANCE previous_inst
     cpu_create_font_set (&cpu_obj);
     cpu_read_rom_from_file (&cpu_obj, path);
     cpu_init (&cpu_obj);
+
+    display_generate_diagonal (&display_obj);
 
     WNDCLASS wc = {0};
     wc.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
