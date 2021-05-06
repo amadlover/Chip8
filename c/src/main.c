@@ -22,13 +22,13 @@ void display_generate_diagonal (display* display_obj)
     {
         for (char x = 0; x < 64; ++x)
         {
-            if (x == y)
+            if (x == (y * 2))
             {
                 display_obj->x_pixels[y] |= (uint64_t)1 << x;
             }
             else
             {
-                //display_obj->x_pixels[y] &= (uint64_t)0 << x;
+                display_obj->x_pixels[y] &= ~((uint64_t)1 << x);
             }
         }
     }
