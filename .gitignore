@@ -1,3 +1,7 @@
-# Build folders
+# C Build folders
 
 build*
+
+# Rust Target folders
+
+target*

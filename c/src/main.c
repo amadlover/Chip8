@@ -146,7 +146,7 @@ void cpu_read_rom_from_file (cpu* cpu_obj, char* path)
     FILE* file = fopen (path, "r");
     if (!file)
     {
-        OutputDebugMessage (L"Failed to open %s\n", path);  
+        OutputDebugString (L"Failed to open %s\n", path);  
         return;
     }
 
@@ -160,7 +160,7 @@ void cpu_read_rom_from_file (cpu* cpu_obj, char* path)
 
     for (int i = 512; i < 512 + file_size; i += 2)
     {
-        OutputDebugMessage (L"%x %x\n", cpu_obj->memory[i], cpu_obj->memory[i + 1]);
+        OutputDebugString (L"%x %x\n", cpu_obj->memory[i], cpu_obj->memory[i + 1]);
     }
 }
 
@@ -179,29 +179,42 @@ LRESULT CALLBACK WindowProc (HWND h_wnd, UINT msg, WPARAM w_param, LPARAM l_para
     switch (msg)
     {
         case WM_QUIT:
-        PostQuitMessage (0);
-        break;
+            PostQuitMessage (0);
+            break;
 
         case WM_DESTROY:
-        PostQuitMessage (0);
-        break;
+            PostQuitMessage (0);
+            break;
 
         case WM_CLOSE:
-        PostQuitMessage (0);
-        break;
+            PostQuitMessage (0);
+            break;
 
         case WM_KEYDOWN:
-        OutputDebugMessage (L"key down\n");
-        break;
+            OutputDebugString (L"key down\n");
+            break;
 
         case WM_KEYUP:
-        OutputDebugMessage (L"key up\n");
+            OutputDebugString (L"key up\n");
+            break;
 
         case WM_TIMER:
-        OutputDebugMessage (L"timer\n");
+            OutputDebugString (L"timer\n");
+            break;
+
+        case WM_PAINT:
+            PAINTSTRUCT ps;
+            HDC hdc = BeginPaint (h_wnd, &ps);
+            RECT rect;
+            GetClientRect (h_wnd, &rect);
+            
+            FillRect (hdc, &rect, CreateSolidBrush (RGB (0,0,0)));
+            
+            EndPaint (h_wnd, &ps);
+           break;
 
         default:
-        break;
+            break;
     }
     
     return DefWindowProc (h_wnd, msg, w_param, l_param);
@@ -209,7 +222,7 @@ LRESULT CALLBACK WindowProc (HWND h_wnd, UINT msg, WPARAM w_param, LPARAM l_para
 
 int WINAPI wWinMain (_In_ HINSTANCE h_instance, _In_opt_ HINSTANCE previous_instance, _In_ PWSTR cmd_line, _In_ int cmd_show)
 {
-    OutputDebugMessage (L"Hello Chip8\n");
+    OutputDebugString (L"Hello Chip8\n");
 
     char* path = "./build32/vscode/debug/IBM_Logo.ch8";
 
