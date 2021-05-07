@@ -12,16 +12,6 @@ struct CPU {
     stack: [u16; 16],
 }
 
-impl CPU {
-    fn cpu() -> CPU {
-        CPU {}
-    }
-
-    fn read_rom_from_file (&mut self, path: String) {
-    
-    }
-}
-
 fn main() {
     println!("Hello, world!");
 }
