@@ -8,7 +8,7 @@
 
 typedef struct _display
 {
-    uint64_t x_pixels[32];
+    unsigned char pixels[64][32];
 } display;
 
 void* display_create ()
@@ -24,11 +24,11 @@ void display_generate_diagonal (display* display_obj)
         {
             if (x == (y * 2))
             {
-                display_obj->x_pixels[y] |= (uint64_t)1 << x;
+                display_obj->pixels[x][y] = 1;
             }
             else
             {
-                display_obj->x_pixels[y] &= ~((uint64_t)1 << x);
+                display_obj->pixels[x][y] = 0;
             }
         }
     }
@@ -231,7 +231,7 @@ void cpu_execute (cpu* cpu_obj)
         {
             OutputDebugString (L"Clearing the screen\n");
 
-            memset (display_obj.x_pixels, 0, sizeof (uint64_t) * 32);
+            memset (display_obj.pixels, 0, sizeof (unsigned char) * 64 * 32);
             cpu_obj->pc += 2;
         }
         else if (opcode_lower_byte == 0xEE)
@@ -337,8 +337,8 @@ LRESULT CALLBACK WindowProc (HWND h_wnd, UINT msg, WPARAM w_param, LPARAM l_para
 
         case WM_TIMER:
             OutputDebugString (L"timer\n");
-            InvalidateRect (h_wnd, &client_rect, TRUE);
             cpu_execute (&cpu_obj);
+            InvalidateRect (h_wnd, &client_rect, TRUE);
             break;
 
         case WM_PAINT:
@@ -352,7 +352,7 @@ LRESULT CALLBACK WindowProc (HWND h_wnd, UINT msg, WPARAM w_param, LPARAM l_para
             {
                 for (char x = 0; x < 64; ++x)
                 {
-                    if ((display_obj.x_pixels[y] & ((uint64_t)1 << x)) == (((uint64_t)1 << x)))
+                    if (display_obj.pixels[x][y] == 1)
                     {
                         RECT draw_rect;
                         draw_rect.left = chip_8_to_win32_scale * x;
@@ -362,7 +362,7 @@ LRESULT CALLBACK WindowProc (HWND h_wnd, UINT msg, WPARAM w_param, LPARAM l_para
 
                         FillRect (hdc, &draw_rect, CreateSolidBrush (RGB (255,255,255)));
                     }
-                    else if ((display_obj.x_pixels[y] & ((uint64_t)1 << x)) == 0)
+                    else if (display_obj.pixels[x][y] == 0)
                     {
                         RECT draw_rect;
                         draw_rect.left = chip_8_to_win32_scale * x;
