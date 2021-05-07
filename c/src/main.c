@@ -236,7 +236,7 @@ void cpu_execute (cpu* cpu_obj)
         }
         else if (opcode_lower_byte == 0xEE)
         {
-            OutputDebugString (L"Returing from subroutine\n");
+            OutputDebugString (L"Returning from subroutine\n");
         }
     }
     else if ((opcode_higher_byte & 0xF0) == 0xA0)
@@ -263,7 +263,14 @@ void cpu_execute (cpu* cpu_obj)
     }
     else if ((opcode_higher_byte & 0xF0) == 0xD0)
     {
-        OutputDebugString (L"Drawing\n");
+        wchar_t buff[256];
+        swprintf (buff, 256, L"Drawing %02x bytes starting at %02x at %02x %02x\n", opcode_lower_byte & 0x0F, cpu_obj->i, cpu_obj->vx[opcode_higher_byte & 0x0F], cpu_obj->vx[opcode_lower_byte & 0xF0]);
+        OutputDebugString (buff);
+
+        unsigned char* bytes_to_display = (unsigned char*) malloc (opcode_lower_byte & 0x0F);
+        memcpy (bytes_to_display, cpu_obj->memory + cpu_obj->i, opcode_lower_byte & 0x0F);
+
+        free (bytes_to_display);
         cpu_obj->pc += 2;
     }
     else if ((opcode_higher_byte & 0xF0) == 0x70)
@@ -384,7 +391,6 @@ int WINAPI wWinMain (_In_ HINSTANCE h_instance, _In_opt_ HINSTANCE previous_inst
 
     char* path = "./build32/vscode/debug/IBM_Logo.ch8";
 
-    // cpu_obj = (cpu*)cpu_create ();
     cpu_create_font_set (&cpu_obj);
     cpu_read_rom_from_file (&cpu_obj, path);
     cpu_init (&cpu_obj);
@@ -440,16 +446,10 @@ int WINAPI wWinMain (_In_ HINSTANCE h_instance, _In_opt_ HINSTANCE previous_inst
             TranslateMessage (&msg);
             DispatchMessage (&msg);
         }
-        else
-        {
-            // draw
-        }
     }
 
     KillTimer (h_wnd, ID_GAME_TICK);
     DestroyWindow (h_wnd);
-
-    // cpu_destroy (cpu_obj);
 
     return EXIT_SUCCESS;
 }
