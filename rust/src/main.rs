@@ -12,6 +12,27 @@ struct CPU {
     stack: [u16; 16],
 }
 
+impl CPU {
+    fn new() -> CPU {
+        println!("Hello CPU");
+
+        CPU {
+            memory: [0; 4096],
+            vx: [0; 16],
+            i: 0,
+
+            delay_timer: 0,
+            sound_timer: 0,
+            pc: 0x200,
+            sp: 0,
+
+            stack: [0; 16],
+        }
+    }
+
+    fn execute() {}
+}
+
 fn main() {
-    println!("Hello, world!");
+    
 }
