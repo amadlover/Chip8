@@ -1,10 +1,12 @@
 #include "vulkan.h"
+#include <vulkan/vulkan_win32.h>
 
 #include <stdlib.h>
 
 VkInstance instance;
+VkSurfaceKHR surface;
 
-void vulkan_init ()
+void vulkan_init (HINSTANCE h_instance, HWND h_wnd)
 {
     char* requested_instance_extensions[8] = {
         VK_KHR_SURFACE_EXTENSION_NAME, 
@@ -21,7 +23,7 @@ void vulkan_init ()
         VK_MAKE_VERSION (1,0,0)
     };
 
-    VkInstanceCreateInfo create_info = {
+    VkInstanceCreateInfo instance_create_info = {
         VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
         NULL,
         0,
@@ -32,8 +34,7 @@ void vulkan_init ()
         requested_instance_extensions
     };
 
-    VkInstance instance;
-    vkCreateInstance (&create_info, NULL, &instance);
+    vkCreateInstance (&instance_create_info, NULL, &instance);
 
     uint32_t num_physical_devices = 0;
     vkEnumeratePhysicalDevices (instance, &num_physical_devices, NULL);
@@ -83,7 +84,7 @@ void vulkan_init ()
 				compute_queue_family_index = i;
 				break;
 			}
-		}	
+		}
 	}
 
 	for (uint32_t i = 0; i < num_queue_families; ++i)
@@ -104,7 +105,7 @@ void vulkan_init ()
 				transfer_queue_family_index = i;
 				break;
 			}
-		}	
+		}
 	}
     
     VkPhysicalDeviceMemoryProperties physical_device_memory_properties;
@@ -115,10 +116,25 @@ void vulkan_init ()
 	VkPhysicalDeviceLimits physical_device_limits = device_properties.limits;
 
     free (queue_family_properties);
+
+	VkWin32SurfaceCreateInfoKHR surface_create_info = {
+		VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR,
+		NULL,
+		0,
+		h_instance,
+		h_wnd
+	};
+
+	vkCreateWin32SurfaceKHR (instance, &surface_create_info, NULL, &surface);
 }
 
 void vulkan_destroy ()
 {
+	if (surface != VK_NULL_HANDLE)
+	{
+		vkDestroySurfaceKHR (instance, surface, NULL);
+	}
+
     if (instance != VK_NULL_HANDLE)
     {
         vkDestroyInstance (instance, NULL);

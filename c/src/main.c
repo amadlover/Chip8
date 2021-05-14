@@ -453,7 +453,7 @@ int WINAPI wWinMain(_In_ HINSTANCE h_instance, _In_opt_ HINSTANCE previous_insta
     MSG msg;
     ZeroMemory(&msg, sizeof(msg));
 
-    vulkan_init();
+    vulkan_init(h_instance, h_wnd);
 
     while (
         msg.message != WM_QUIT &&
