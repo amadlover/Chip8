@@ -5,10 +5,16 @@
 
 VkInstance instance;
 VkSurfaceKHR surface;
+VkDevice graphics_device;
+VkSwapchainKHR swapchain;
+VkExtent2D current_extent;
+VkSurfaceFormatKHR chosen_surface_format;
+VkPresentModeKHR chosen_present_mode;
+
 
 void vulkan_init (HINSTANCE h_instance, HWND h_wnd)
 {
-    char* requested_instance_extensions[8] = {
+    char* requested_instance_extensions[2] = {
         VK_KHR_SURFACE_EXTENSION_NAME, 
         VK_KHR_WIN32_SURFACE_EXTENSION_NAME
     };
@@ -44,9 +50,6 @@ void vulkan_init (HINSTANCE h_instance, HWND h_wnd)
 
     VkPhysicalDevice physical_device = physical_devices[0];
     free (physical_devices);
-
-	VkPhysicalDeviceFeatures device_features;
-	vkGetPhysicalDeviceFeatures (physical_device, &device_features);
 
 	uint32_t num_queue_families = 0;
 	vkGetPhysicalDeviceQueueFamilyProperties (physical_device, &num_queue_families, NULL);
@@ -113,7 +116,6 @@ void vulkan_init (HINSTANCE h_instance, HWND h_wnd)
 
 	VkPhysicalDeviceProperties device_properties;
 	vkGetPhysicalDeviceProperties (physical_device, &device_properties);
-	VkPhysicalDeviceLimits physical_device_limits = device_properties.limits;
 
     free (queue_family_properties);
 
@@ -126,6 +128,111 @@ void vulkan_init (HINSTANCE h_instance, HWND h_wnd)
 	};
 
 	vkCreateWin32SurfaceKHR (instance, &surface_create_info, NULL, &surface);
+
+	VkSurfaceCapabilitiesKHR surface_capabilities;
+	vkGetPhysicalDeviceSurfaceCapabilitiesKHR (physical_device, surface, &surface_capabilities);
+
+	current_extent = surface_capabilities.currentExtent;
+	uint32_t surface_format_count = 0;
+	vkGetPhysicalDeviceSurfaceFormatsKHR (physical_device, surface, &surface_format_count, NULL);
+
+	VkSurfaceFormatKHR* surface_formats = (VkSurfaceFormatKHR*)malloc (sizeof (VkSurfaceFormatKHR) * surface_format_count);
+	vkGetPhysicalDeviceSurfaceFormatsKHR (physical_device, surface, &surface_format_count, surface_formats);
+
+	chosen_surface_format = surface_formats[0];
+
+	uint32_t present_mode_count = 0;
+	vkGetPhysicalDeviceSurfacePresentModesKHR (physical_device, surface, &present_mode_count, NULL);
+
+	VkPresentModeKHR* present_modes = (VkPresentModeKHR*)malloc (sizeof (VkPresentModeKHR) * present_mode_count);
+	vkGetPhysicalDeviceSurfacePresentModesKHR (physical_device, surface, &present_mode_count, present_modes);
+
+	for (uint32_t p = 0; p < present_mode_count; p++)
+	{
+		if (present_modes[p] == VK_PRESENT_MODE_MAILBOX_KHR)
+		{
+			chosen_present_mode = present_modes[p];
+			break;
+		}
+	}
+
+	char* device_extensions[1];
+	device_extensions[0] = VK_KHR_SWAPCHAIN_EXTENSION_NAME;
+
+	float priorities[3] = { 1.f, 1.f, 1.f };
+
+	VkDeviceQueueCreateInfo queue_create_infos[3];
+	uint32_t unique_queue_family_indices[3] = { 0,0,0 };
+	uint32_t unique_queue_count[3] = { 1,1,1 };
+	uint32_t unique_queue_family_index_count = 0;
+
+	if (graphics_queue_family_index == compute_queue_family_index)
+	{
+		unique_queue_family_indices[0] = graphics_queue_family_index;
+		++unique_queue_family_index_count;
+		++unique_queue_count[0];
+	}
+	else
+	{
+		unique_queue_family_indices[0] = graphics_queue_family_index;
+		unique_queue_family_indices[1] = compute_queue_family_index;
+		unique_queue_family_index_count += 2;
+	}
+
+	if (graphics_queue_family_index != transfer_queue_family_index)
+	{
+		unique_queue_family_indices[unique_queue_family_index_count] = transfer_queue_family_index;
+		++unique_queue_family_index_count;
+	}
+
+	for (uint32_t ui = 0; ui < unique_queue_family_index_count; ++ui)
+	{
+		queue_create_infos[ui].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+		queue_create_infos[ui].pNext = NULL;
+		queue_create_infos[ui].pQueuePriorities = priorities;
+		queue_create_infos[ui].queueCount = unique_queue_count[ui];
+		queue_create_infos[ui].queueFamilyIndex = unique_queue_family_indices[ui];
+		queue_create_infos[ui].flags = 0;
+	}
+
+	VkPhysicalDeviceFeatures device_features;
+	vkGetPhysicalDeviceFeatures (physical_device, &device_features);
+
+	VkDeviceCreateInfo device_create_info = {
+		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+		NULL,
+		0,
+		unique_queue_family_index_count,
+		queue_create_infos,
+		0,
+		NULL,
+		1,
+		device_extensions,
+		&device_features
+	};
+	vkCreateDevice (physical_device, &device_create_info, NULL, &graphics_device);
+
+		VkSwapchainCreateInfoKHR swapchain_create_info = {
+		VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
+		NULL,
+		0,
+		surface,
+		surface_capabilities.minImageCount + 1,
+		chosen_surface_format.format,
+		chosen_surface_format.colorSpace,
+		surface_capabilities.currentExtent,
+		1,
+		surface_capabilities.supportedUsageFlags,
+		VK_SHARING_MODE_EXCLUSIVE,
+		0,
+		NULL,
+		surface_capabilities.currentTransform,
+		VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
+		chosen_present_mode,
+		1,
+		VK_NULL_HANDLE
+	};
+	vkCreateSwapchainKHR (graphics_device, &swapchain_create_info, NULL, &swapchain);
 }
 
 void vulkan_destroy ()
@@ -133,6 +240,16 @@ void vulkan_destroy ()
 	if (surface != VK_NULL_HANDLE)
 	{
 		vkDestroySurfaceKHR (instance, surface, NULL);
+	}
+
+	if (swapchain != VK_NULL_HANDLE)
+	{
+		vkDestroySwapchainKHR (graphics_device, swapchain, NULL);
+	}
+
+	if (graphics_device != VK_NULL_HANDLE)
+	{
+		vkDestroyDevice (graphics_device, NULL);
 	}
 
     if (instance != VK_NULL_HANDLE)
