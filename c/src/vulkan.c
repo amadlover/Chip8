@@ -11,6 +11,9 @@ VkExtent2D current_extent;
 VkSurfaceFormatKHR chosen_surface_format;
 VkPresentModeKHR chosen_present_mode;
 
+uint32_t swapchain_image_count = 0;
+VkImage* swapchain_images = NULL;
+VkImageView* swapchain_image_views = NULL;
 
 void vulkan_init (HINSTANCE h_instance, HWND h_wnd)
 {
@@ -129,6 +132,9 @@ void vulkan_init (HINSTANCE h_instance, HWND h_wnd)
 
 	vkCreateWin32SurfaceKHR (instance, &surface_create_info, NULL, &surface);
 
+	VkBool32 is_surface_supported = VK_FALSE;
+	vkGetPhysicalDeviceSurfaceSupportKHR (physical_device, graphics_queue_family_index, surface, &is_surface_supported);
+
 	VkSurfaceCapabilitiesKHR surface_capabilities;
 	vkGetPhysicalDeviceSurfaceCapabilitiesKHR (physical_device, surface, &surface_capabilities);
 
@@ -212,7 +218,7 @@ void vulkan_init (HINSTANCE h_instance, HWND h_wnd)
 	};
 	vkCreateDevice (physical_device, &device_create_info, NULL, &graphics_device);
 
-		VkSwapchainCreateInfoKHR swapchain_create_info = {
+	VkSwapchainCreateInfoKHR swapchain_create_info = {
 		VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
 		NULL,
 		0,
@@ -233,18 +239,55 @@ void vulkan_init (HINSTANCE h_instance, HWND h_wnd)
 		VK_NULL_HANDLE
 	};
 	vkCreateSwapchainKHR (graphics_device, &swapchain_create_info, NULL, &swapchain);
+
+	vkGetSwapchainImagesKHR (graphics_device, swapchain, &swapchain_image_count, NULL);
+	swapchain_images = (VkImage*) malloc (sizeof (VkImage) * swapchain_image_count);
+	vkGetSwapchainImagesKHR (graphics_device, swapchain, &swapchain_image_count, swapchain_images);
+
+	swapchain_image_views = (VkImageView*) malloc (sizeof (VkImageView) * swapchain_image_count);
+
+	VkImageSubresourceRange subresource_range = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
+	VkComponentMapping component_mapping = { VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY };
+	VkImageViewCreateInfo image_view_create_info = {
+		VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+		NULL,
+		0,
+		VK_NULL_HANDLE,
+		VK_IMAGE_VIEW_TYPE_2D,
+		chosen_surface_format.format,
+		component_mapping,
+		subresource_range
+	};
+
+	for (uint32_t i = 0; i < swapchain_image_count; ++i)
+	{
+		image_view_create_info.image = swapchain_images[i];
+		vkCreateImageView (graphics_device, &image_view_create_info, NULL, swapchain_image_views + i);
+	}
 }
 
 void vulkan_destroy ()
 {
-	if (surface != VK_NULL_HANDLE)
+	free (swapchain_images);
+
+	for (uint32_t i = 0; i < swapchain_image_count; ++i)
 	{
-		vkDestroySurfaceKHR (instance, surface, NULL);
+		if (swapchain_image_views[i] != VK_NULL_HANDLE)
+		{
+			vkDestroyImageView (graphics_device, swapchain_image_views[i], NULL);
+		}
 	}
+
+	free (swapchain_image_views);
 
 	if (swapchain != VK_NULL_HANDLE)
 	{
 		vkDestroySwapchainKHR (graphics_device, swapchain, NULL);
+	}
+	
+	if (surface != VK_NULL_HANDLE)
+	{
+		vkDestroySurfaceKHR (instance, surface, NULL);
 	}
 
 	if (graphics_device != VK_NULL_HANDLE)
