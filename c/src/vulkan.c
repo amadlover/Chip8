@@ -3,17 +3,25 @@
 
 #include <stdlib.h>
 
-VkInstance instance;
-VkSurfaceKHR surface;
-VkDevice graphics_device;
-VkSwapchainKHR swapchain;
+VkInstance instance = VK_NULL_HANDLE;
+VkSurfaceKHR surface = VK_NULL_HANDLE;
+VkDevice graphics_device = VK_NULL_HANDLE;
+VkSwapchainKHR swapchain = VK_NULL_HANDLE;
 VkExtent2D current_extent;
 VkSurfaceFormatKHR chosen_surface_format;
-VkPresentModeKHR chosen_present_mode;
+VkPresentModeKHR chosen_present_mode = VK_NULL_HANDLE;
+VkCommandPool graphics_command_pool = VK_NULL_HANDLE;
+
+VkCommandBuffer* swapchain_command_buffers = NULL;
 
 uint32_t swapchain_image_count = 0;
 VkImage* swapchain_images = NULL;
 VkImageView* swapchain_image_views = NULL;
+
+VkBuffer draw_buffer = VK_NULL_HANDLE;
+VkDeviceMemory draw_buffer_memory = VK_NULL_HANDLE;
+
+VkImage draw_image = VK_NULL_HANDLE;
 
 void vulkan_init (HINSTANCE h_instance, HWND h_wnd)
 {
@@ -264,10 +272,81 @@ void vulkan_init (HINSTANCE h_instance, HWND h_wnd)
 		image_view_create_info.image = swapchain_images[i];
 		vkCreateImageView (graphics_device, &image_view_create_info, NULL, swapchain_image_views + i);
 	}
+
+	/*VkImageCreateInfo image_create_info = {
+		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+		NULL,
+		0,
+		VK_IMAGE_TYPE_2D,
+		chosen_surface_format.format,
+		{current_extent.width, current_extent.height, 1},
+		1,
+		1,
+		VK_SAMPLE_COUNT_1_BIT,
+		VK_IMAGE_TILING_LINEAR,
+		VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+		VK_SHARING_MODE_EXCLUSIVE,
+		1,
+		&graphics_queue_family_index,
+		VK_IMAGE_LAYOUT_UNDEFINED
+	};
+	vkCreateImage (graphics_device, &image_create_info, NULL, &draw_image);*/
+	
+	VkBufferCreateInfo draw_buffer_create_info = {
+		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+		NULL,
+		0,
+		current_extent.width * current_extent.height * 3 * sizeof (uint8_t),
+		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+		VK_SHARING_MODE_EXCLUSIVE,
+		1,
+		&graphics_queue_family_index
+	};
+	vkCreateBuffer (graphics_device, &draw_buffer_create_info, NULL, &draw_buffer);
+
+	VkMemoryRequirements draw_buffer_memory_requirements;
+	vkGetBufferMemoryRequirements (graphics_device, draw_buffer, &draw_buffer_memory_requirements);
+
+	VkMemoryAllocateInfo draw_buffer_memory_allocate_info = {
+		VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+		NULL,
+		draw_buffer_memory_requirements.size,
+	};
+
+	uint32_t required_types = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+	uint32_t memory_type_index = 0;
+	
+	for (uint32_t i = 0; i < physical_device_memory_properties.memoryTypeCount; ++i)
+	{
+		if (draw_buffer_memory_requirements.memoryTypeBits & (1 << i) && required_types & physical_device_memory_properties.memoryTypes[i].propertyFlags)
+		{
+			memory_type_index = i;
+			break;
+		}
+	}
+
+	vkAllocateMemory (graphics_device, &draw_buffer_memory_allocate_info, NULL, &draw_buffer_memory);
+	vkBindBufferMemory (graphics_device, draw_buffer, draw_buffer_memory, 0);
+	void* mapped_data = NULL;
+	vkMapMemory (graphics_device, draw_buffer_memory, 0, current_extent.width * current_extent.height * 3 * sizeof (uint8_t), 0, &mapped_data);
 }
 
 void vulkan_destroy ()
 {
+	vkUnmapMemory (graphics_device, draw_buffer_memory);
+	
+	vkFreeMemory (graphics_device, draw_buffer_memory, NULL);
+
+	if (draw_buffer != VK_NULL_HANDLE)
+	{
+		vkDestroyBuffer (graphics_device, draw_buffer, NULL);
+	}
+
+	if (draw_image != VK_NULL_HANDLE)
+	{
+		vkDestroyImage (graphics_device, draw_image, NULL);
+	}
+
 	free (swapchain_images);
 
 	for (uint32_t i = 0; i < swapchain_image_count; ++i)
